@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Phone Access System</title>
+
+<link rel="stylesheet"
+      href="/static/style.css">
+
+<link rel="manifest"
+      href="/static/manifest.json">
+
+<meta name="theme-color"
+      content="#03153a">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>
+        📱 PHONE ACCESS SYSTEM
+    </h1>
+
+    <button
+        id="installBtn"
+        class="install-btn"
+        style="display:none;"
+    >
+        📲 INSTALL APP
+    </button>
+
+    <form
+        action="/scan"
+        method="post"
+        class="search-box"
+    >
+
+        <input
+            type="text"
+            id="id_number"
+            name="id_number"
+            placeholder="Enter / Scan ID Number"
+            autofocus
+            required
+        >
+
+        <button type="submit">
+            VERIFY
+        </button>
+
+    </form>
+
+    {% if message %}
+
+    <div class="message">
+
+        {{ message }}
+
+    </div>
+
+    {% endif %}
+
+    {% if employee %}
+
+    <div class="card">
+
+        <div class="photo">
+
+            {% if employee.PHOTO %}
+
+            <img
+                src="{{ employee.PHOTO }}"
+                class="profile-pic"
+                alt="Employee Photo"
+            >
+
+            {% else %}
+
+            👤
+
+            {% endif %}
+
+        </div>
+
+        <h2>
+            {{ employee['Name'] }}
+        </h2>
+
+        <p>
+            <strong>ID Number:</strong>
+            {{ employee['ID Number'] }}
+        </p>
+
+        <p>
+            <strong>Department:</strong>
+            {{ employee['Department'] }}
+        </p>
+
+        <p>
+            <strong>Status:</strong>
+            {{ employee['STATUS'] }}
+        </p>
+
+        {% if employee['Phone Permit']|upper == 'YES' %}
+
+        <div class="allowed">
+            ✅ PHONE ALLOWED
+        </div>
+
+        {% else %}
+
+        <div class="denied">
+            ❌ PHONE NOT ALLOWED
+        </div>
+
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+<script>
+
+if ('serviceWorker' in navigator) {
+
+    navigator.serviceWorker.register(
+        '/static/service-worker.js'
+    );
+
+}
+
+let deferredPrompt;
+
+window.addEventListener(
+    'beforeinstallprompt',
+    (e) => {
+
+        e.preventDefault();
+
+        deferredPrompt = e;
+
+        document.getElementById(
+            'installBtn'
+        ).style.display = 'block';
+
+    }
+);
+
+document
+.getElementById('installBtn')
+.addEventListener(
+    'click',
+    async () => {
+
+        if(!deferredPrompt){
+            return;
+        }
+
+        deferredPrompt.prompt();
+
+        await deferredPrompt.userChoice;
+
+        deferredPrompt = null;
+
+    }
+);
+
+</script>
+
+</body>
+
+</html>
