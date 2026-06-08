@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Phone Access Dashboard</title>
+
+<link
+    rel="stylesheet"
+    href="/static/style.css"
+>
+
+<meta
+    name="theme-color"
+    content="#03153a"
+>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top-bar">
+
+        <h1>
+            📊 PHONE ACCESS DASHBOARD
+        </h1>
+
+        <a
+            href="/"
+            class="dashboard-btn"
+        >
+            🏠 Home
+        </a>
+
+    </div>
+
+    <!-- STATISTICS -->
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+
+            <h3>
+                Total Employees
+            </h3>
+
+            <span>
+                {{ total_employees }}
+            </span>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>
+                Allowed Today
+            </h3>
+
+            <span>
+                {{ allowed_today }}
+            </span>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>
+                Denied Today
+            </h3>
+
+            <span>
+                {{ denied_today }}
+            </span>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>
+                Violations
+            </h3>
+
+            <span>
+                {{ violation_count }}
+            </span>
+
+        </div>
+
+    </div>
+
+    <!-- RECENT LOGS -->
+
+    <div class="table-card">
+
+        <h2>
+            Recent Logs
+        </h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Date/Time</th>
+                    <th>ID Number</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Result</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for row in recent_logs %}
+
+                <tr>
+
+                    <td>
+                        {{ row.get('Timestamp','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('ID Number','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('Name','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('Department','') }}
+                    </td>
+
+                    <td>
+
+                        {% if row.get('Result','') == 'ALLOWED' %}
+
+                        <span class="allowed-badge">
+                            ALLOWED
+                        </span>
+
+                        {% else %}
+
+                        <span class="denied-badge">
+                            DENIED
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <!-- VIOLATIONS -->
+
+    <div class="table-card">
+
+        <h2>
+            Recent Violations
+        </h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Date/Time</th>
+                    <th>ID Number</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Violation</th>
+                    <th>Method</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for row in recent_violations %}
+
+                <tr>
+
+                    <td>
+                        {{ row.get('Timestamp','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('ID Number','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('Name','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('Department','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('Violation','') }}
+                    </td>
+
+                    <td>
+                        {{ row.get('Method','') }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+setInterval(
+    () => {
+
+        location.reload();
+
+    },
+    5000
+);
+
+</script>
+
+</body>
+</html>

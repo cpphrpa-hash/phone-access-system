@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+
 from datetime import datetime
 
 # ==========================================
@@ -96,7 +97,7 @@ def get_employee_photo(id_number):
     return None
 
 # ==========================================
-# LOGGING
+# LOG
 # ==========================================
 
 def write_log(employee, method, result):
@@ -114,6 +115,9 @@ def write_log(employee, method, result):
         result
     ])
 
+# ==========================================
+# VIOLATION
+# ==========================================
 
 def write_violation(employee, method):
 
@@ -130,6 +134,9 @@ def write_violation(employee, method):
         method
     ])
 
+# ==========================================
+# LIVE MONITOR
+# ==========================================
 
 def update_live_monitor(employee, method, result):
 
@@ -157,7 +164,10 @@ def update_live_monitor(employee, method, result):
         employee["Name"],
         timestamp,
         result,
-        method
+        method,
+        get_employee_photo(
+        employee["ID Number"]
+        )
     ]
 
     if row_number:
@@ -171,6 +181,41 @@ def update_live_monitor(employee, method, result):
 
         live_monitor.append_row(values)
 
+# ==========================================
+# EMPLOYEE SEARCH
+# ==========================================
+
+def find_employee(search_value):
+
+    records = database.get_all_records()
+
+    search_value = str(
+        search_value
+    ).strip().upper()
+
+    for row in records:
+
+        db_id = str(
+            row.get("ID Number", "")
+        ).strip().upper()
+
+        db_rfid = str(
+            row.get("RFID UID", "")
+        ).strip().upper()
+
+        if (
+            search_value == db_id
+            or
+            search_value == db_rfid
+        ):
+
+            row["PHOTO"] = get_employee_photo(
+                row["ID Number"]
+            )
+
+            return row
+
+    return None
 # ==========================================
 # HOME
 # ==========================================
@@ -199,68 +244,45 @@ def scan(
 
     try:
 
-        records = database.get_all_records()
-
-        search_value = id_number.strip().upper()
-
-        employee = None
-
-        for row in records:
-
-            db_id = str(
-                row.get("ID Number", "")
-            ).strip().upper()
-
-            db_rfid = str(
-                row.get("RFID UID", "")
-            ).strip().upper()
-
-            if (
-                search_value == db_id
-                or
-                search_value == db_rfid
-            ):
-
-                employee = row
-
-                employee["PHOTO"] = get_employee_photo(
-                    employee["ID Number"]
-                )
-
-                permit = str(
-                    employee["Phone Permit"]
-                ).upper()
-
-                if permit == "YES":
-
-                    result = "ALLOWED"
-
-                else:
-
-                    result = "DENIED"
-
-                write_log(
-                    employee,
-                    "MANUAL",
-                    result
-                )
-
-                update_live_monitor(
-                    employee,
-                    "MANUAL",
-                    result
-                )
-
-                if result == "DENIED":
-
-                    write_violation(
-                        employee,
-                        "MANUAL"
-                    )
-
-                break
+        employee = find_employee(
+            id_number
+        )
 
         if employee:
+
+            permit = str(
+                employee.get(
+                    "Phone Permit",
+                    ""
+                )
+            ).upper()
+
+            if permit == "YES":
+
+                result = "ALLOWED"
+
+            else:
+
+                result = "DENIED"
+
+            write_log(
+                employee,
+                "MANUAL",
+                result
+            )
+
+            update_live_monitor(
+                employee,
+                "MANUAL",
+                result
+            )
+
+            if result == "DENIED":
+
+                write_violation(
+                    employee,
+                    "MANUAL"
+                )
 
             return templates.TemplateResponse(
                 request=request,
@@ -292,13 +314,170 @@ def scan(
         )
 
 # ==========================================
-# TEST
+# DASHBOARD
 # ==========================================
 
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+
+    try:
+
+        employees = database.get_all_records()
+        logs = logsheet.get_all_records()
+        violation_rows = violations.get_all_records()
+
+        total_employees = len(
+            employees
+        )
+
+        allowed_today = 0
+        denied_today = 0
+
+        for row in logs:
+
+            result = str(
+                row.get(
+                    "Result",
+                    ""
+                )
+            ).upper()
+
+            if result == "ALLOWED":
+
+                allowed_today += 1
+
+            elif result == "DENIED":
+
+                denied_today += 1
+
+        recent_logs = list(
+            reversed(logs[-20:])
+        )
+
+        recent_violations = list(
+            reversed(
+                violation_rows[-20:]
+            )
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="dashboard.html",
+            context={
+                "total_employees":
+                total_employees,
+
+                "allowed_today":
+                allowed_today,
+
+                "denied_today":
+                denied_today,
+
+                "violation_count":
+                len(
+                    violation_rows
+                ),
+
+                "recent_logs":
+                recent_logs,
+
+                "recent_violations":
+                recent_violations
+            }
+        )
+
+    except Exception as e:
+
+        return HTMLResponse(
+            f"""
+            <h1>Dashboard Error</h1>
+            <pre>{e}</pre>
+            """
+        )
+
+# ==========================================
+# LIVE MONITOR API
+# ==========================================
+
+@app.get("/api/live-monitor")
+def api_live_monitor():
+
+    try:
+
+        records = (
+            live_monitor
+            .get_all_records()
+        )
+
+        records.reverse()
+
+        return records[:50]
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
+
+# ==========================================
+# RECENT LOGS API
+# ==========================================
+
+@app.get("/api/logs")
+def api_logs():
+
+    try:
+
+        records = (
+            logsheet
+            .get_all_records()
+        )
+
+        records.reverse()
+
+        return records[:50]
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
+@app.get("/live-monitor", response_class=HTMLResponse)
+def live_monitor_page(request: Request):
+
+    records = live_monitor.get_all_records()
+
+    records.reverse()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="live_monitor.html",
+        context={
+            "records": records[:50]
+        }
+    )
+# ==========================================
+# TEST
+# ==========================================
+@app.get("/live-monitor", response_class=HTMLResponse)
+def live_monitor_page(request: Request):
+
+    records = live_monitor.get_all_records()
+
+    records.reverse()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="live_monitor.html",
+        context={
+            "records": records[:50]
+        }
+    )
 @app.get("/test")
 def test():
 
     return {
         "status": "working",
-        "database": "connected"
+        "database": "connected",
+        "sheet_id": SHEET_ID
     }

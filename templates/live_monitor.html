@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Live Monitor</title>
+
+<link
+    rel="stylesheet"
+    href="/static/style.css"
+>
+
+<meta
+    name="theme-color"
+    content="#03153a"
+>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top-bar">
+
+        <h1>
+            📡 LIVE MONITOR
+        </h1>
+
+        <div>
+
+            <a
+                href="/"
+                class="dashboard-btn"
+            >
+                🏠 Home
+            </a>
+
+            <a
+                href="/dashboard"
+                class="dashboard-btn"
+            >
+                📊 Dashboard
+            </a>
+
+        </div>
+
+    </div>
+
+    {% if records %}
+
+        {% for row in records %}
+
+        <div class="monitor-card">
+
+            <div class="monitor-left">
+
+                {% if row.get('Photo','') %}
+
+                <img
+                    src="{{ row.get('Photo','') }}"
+                    class="monitor-photo"
+                    alt="Employee Photo"
+                >
+
+                {% else %}
+
+                <div class="monitor-no-photo">
+                    👤
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            <div class="monitor-center">
+
+                <h2>
+                    {{ row.get('Name','') }}
+                </h2>
+
+                <p>
+                    <strong>ID:</strong>
+                    {{ row.get('ID Number','') }}
+                </p>
+
+                <p>
+                    <strong>Last Scan:</strong>
+                    {{ row.get('Last Scan','') }}
+                </p>
+
+                <p>
+                    <strong>Method:</strong>
+                    {{ row.get('Method','') }}
+                </p>
+
+            </div>
+
+            <div class="monitor-right">
+
+                {% if row.get('Result','') == 'ALLOWED' %}
+
+                <div class="allowed-badge">
+                    ✅ ALLOWED
+                </div>
+
+                {% else %}
+
+                <div class="denied-badge">
+                    ❌ DENIED
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+    <div class="table-card">
+
+        <h2>
+            No Records Found
+        </h2>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+<script>
+
+setInterval(
+    function(){
+
+        location.reload();
+
+    },
+    3000
+);
+
+</script>
+
+</body>
+</html>

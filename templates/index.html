@@ -5,19 +5,27 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>Phone Access System</title>
 
-<link rel="stylesheet"
-      href="/static/style.css">
+<link
+    rel="stylesheet"
+    href="/static/style.css"
+>
 
-<link rel="manifest"
-      href="/static/manifest.json">
+<link
+    rel="manifest"
+    href="/static/manifest.json"
+>
 
-<meta name="theme-color"
-      content="#03153a">
+<meta
+    name="theme-color"
+    content="#03153a"
+>
 
 </head>
 
@@ -25,9 +33,20 @@
 
 <div class="container">
 
-    <h1>
-        📱 PHONE ACCESS SYSTEM
-    </h1>
+    <div class="top-bar">
+
+        <h1>
+            📱 PHONE ACCESS SYSTEM
+        </h1>
+
+        <a
+            href="/dashboard"
+            class="dashboard-btn"
+        >
+            📊 Dashboard
+        </a>
+
+    </div>
 
     <button
         id="installBtn"
@@ -36,6 +55,15 @@
     >
         📲 INSTALL APP
     </button>
+
+    <button
+        id="scanBtn"
+        class="scan-btn"
+    >
+        📷 SCAN QR / BARCODE
+    </button>
+
+    <div id="reader"></div>
 
     <form
         action="/scan"
@@ -47,12 +75,14 @@
             type="text"
             id="id_number"
             name="id_number"
-            placeholder="Enter / Scan ID Number"
+            placeholder="Enter ID Number / RFID UID"
             autofocus
             required
         >
 
-        <button type="submit">
+        <button
+            type="submit"
+        >
             VERIFY
         </button>
 
@@ -70,9 +100,9 @@
 
     {% if employee %}
 
-    <div class="card">
+    <div class="employee-card">
 
-        <div class="photo">
+        <div class="photo-section">
 
             {% if employee.PHOTO %}
 
@@ -84,44 +114,67 @@
 
             {% else %}
 
-            👤
+            <div class="no-photo">
+
+                👤
+
+            </div>
 
             {% endif %}
 
         </div>
 
-        <h2>
-            {{ employee['Name'] }}
-        </h2>
+        <div class="info-section">
 
-        <p>
-            <strong>ID Number:</strong>
-            {{ employee['ID Number'] }}
-        </p>
+            <h2>
 
-        <p>
-            <strong>Department:</strong>
-            {{ employee['Department'] }}
-        </p>
+                {{ employee['Name'] }}
 
-        <p>
-            <strong>Status:</strong>
-            {{ employee['STATUS'] }}
-        </p>
+            </h2>
 
-        {% if employee['Phone Permit']|upper == 'YES' %}
+            <p>
 
-        <div class="allowed">
-            ✅ PHONE ALLOWED
+                <strong>ID Number:</strong>
+
+                {{ employee['ID Number'] }}
+
+            </p>
+
+            <p>
+
+                <strong>Department:</strong>
+
+                {{ employee['Department'] }}
+
+            </p>
+
+            <p>
+
+                <strong>Status:</strong>
+
+                {{ employee['STATUS'] }}
+
+            </p>
+
+            {% if employee['Phone Permit']|upper == 'YES' %}
+
+            <div class="allowed">
+
+                ✅ PHONE ALLOWED
+
+            </div>
+
+            {% else %}
+
+            <div class="denied">
+
+                ❌ PHONE NOT ALLOWED
+
+            </div>
+
+            {% endif %}
+
         </div>
-
-        {% else %}
-
-        <div class="denied">
-            ❌ PHONE NOT ALLOWED
-        </div>
-
-        {% endif %}
 
     </div>
 
@@ -129,12 +182,109 @@
 
 </div>
 
+<script src="https://unpkg.com/html5-qrcode"></script>
+
 <script>
 
-if ('serviceWorker' in navigator) {
+let scannerStarted = false;
+let html5QrCode;
 
-    navigator.serviceWorker.register(
-        '/static/service-worker.js'
+document
+.getElementById("scanBtn")
+.addEventListener(
+    "click",
+    startScanner
+);
+
+function startScanner(){
+
+    if(scannerStarted){
+        return;
+    }
+
+    scannerStarted = true;
+
+    html5QrCode =
+        new Html5Qrcode(
+            "reader"
+        );
+
+    Html5Qrcode
+    .getCameras()
+    .then(
+        devices => {
+
+            if(
+                devices &&
+                devices.length
+            ){
+
+                html5QrCode.start(
+                    {
+                        facingMode:
+                        "environment"
+                    },
+                    {
+                        fps:10,
+                        qrbox:250
+                    },
+                    onScanSuccess
+                );
+
+            }
+
+        }
+    )
+    .catch(
+        err => {
+
+            alert(
+                "Camera Error: "
+                + err
+            );
+
+        }
+    );
+
+}
+
+function onScanSuccess(
+    decodedText
+){
+
+    document
+    .getElementById(
+        "id_number"
+    ).value = decodedText;
+
+    html5QrCode
+    .stop()
+    .then(
+        () => {
+
+            scannerStarted =
+                false;
+
+            document
+            .querySelector(
+                "form"
+            )
+            .submit();
+
+        }
+    );
+
+}
+
+if(
+    "serviceWorker"
+    in navigator
+){
+
+    navigator
+    .serviceWorker
+    .register(
+        "/static/service-worker.js"
     );
 
 }
@@ -142,35 +292,45 @@ if ('serviceWorker' in navigator) {
 let deferredPrompt;
 
 window.addEventListener(
-    'beforeinstallprompt',
-    (e) => {
+    "beforeinstallprompt",
+    (e)=>{
 
         e.preventDefault();
 
         deferredPrompt = e;
 
-        document.getElementById(
-            'installBtn'
-        ).style.display = 'block';
+        document
+        .getElementById(
+            "installBtn"
+        )
+        .style.display =
+        "block";
 
     }
 );
 
 document
-.getElementById('installBtn')
+.getElementById(
+    "installBtn"
+)
 .addEventListener(
-    'click',
-    async () => {
+    "click",
+    async ()=>{
 
-        if(!deferredPrompt){
+        if(
+            !deferredPrompt
+        ){
             return;
         }
 
-        deferredPrompt.prompt();
+        deferredPrompt
+        .prompt();
 
-        await deferredPrompt.userChoice;
+        await deferredPrompt
+        .userChoice;
 
-        deferredPrompt = null;
+        deferredPrompt =
+        null;
 
     }
 );
@@ -178,5 +338,4 @@ document
 </script>
 
 </body>
-
 </html>
