@@ -173,7 +173,7 @@ def update_live_monitor(employee, method, result):
     if row_number:
 
         live_monitor.update(
-            f"A{row_number}:E{row_number}",
+            f"A{row_number}:F{row_number}",
             [values]
         )
 
